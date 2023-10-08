@@ -56,16 +56,14 @@ export default function HomePage() {
     }
     return tokens;
   }
-  
-  useEffect(async () => {
+
+  useEffect(() => {
     const currentURL = window.location.href;
     const urlParams = extractTokensFromURL(currentURL);
-    //const idToken = urlParams['id_token'];
     const accessToken = urlParams['access_token'];
 
     try {
-      //var decodedIdToken = await jwt_decode(idToken);
-      var decodedaccessToken = await jwt_decode(accessToken);
+      var decodedaccessToken = jwt_decode(accessToken);
 
       if (decodedaccessToken.client_id == "5ia57cv71p7o9qklsta304metp") {
         callGetDynamoDBEndpoint();
