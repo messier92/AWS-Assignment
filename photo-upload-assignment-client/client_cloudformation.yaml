@@ -14,7 +14,6 @@ Parameters: # params passed to "--parameter-overrides" in CLI
     AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
     Description: Enter a string. Must be alpha numeric 3-63 in length.
     Default: photoappdomain
-
 Resources:
   # Create an S3 Bucket that serves a static website (i.e. React app)
   MyHostingBucket:
@@ -124,14 +123,6 @@ Resources:
         GroupName: admins
         Precedence: 0
         UserPoolId: 
-          Ref: PhotoAppUserPool
-  # User Pool for Users
-  NormalUserPoolGroup:
-      Type: AWS::Cognito::UserPoolGroup
-      Properties: 
-        GroupName: users
-        Precedence: 1
-        UserPoolId:
           Ref: PhotoAppUserPool
   # For storing photos information with attributes ImageName (S) and ImageURL (S) and Public (S)
   MyDynamoDBPhotosTable: 

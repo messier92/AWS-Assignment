@@ -5,7 +5,7 @@ import Header from "../../components/Header/Header"
 import ImageGallery from "../../components/Gallery/Gallery";
 import FileUploadModal from '../../components/FileUploadModal/FileUploadModal';
 import jwt_decode from 'jwt-decode';
-import { CognitoJwtVerifier } from "aws-jwt-verify";
+//import { CognitoJwtVerifier } from "aws-jwt-verify";
 
 export default function HomePage() {
 
@@ -57,27 +57,25 @@ export default function HomePage() {
     return tokens;
   }
   
-  useEffect(() => {
+  useEffect(async () => {
     const currentURL = window.location.href;
     const urlParams = extractTokensFromURL(currentURL);
+    const idToken = urlParams['id_token'];
     const accessToken = urlParams['access_token'];
 
-    // check if jwt token is valid 
-    const verifier = CognitoJwtVerifier.create({
-      userPoolId: "ap-southeast-1_Zn7vqPHjf",
-      tokenUse: "access",
-      clientId: "5ia57cv71p7o9qklsta304metp",
-    });
-    
     try {
-      const payload = verifier.verify(accessToken);
-      console.log("Token is valid. Payload:", payload);
-      callGetDynamoDBEndpoint();
-      var decodedaccessToken = jwt_decode(accessToken);
-      setDisplayedName(decodedaccessToken.username)
-      setRole(decodedaccessToken["cognito:groups"][0]);
+      var decodedIdToken = await jwt_decode(accessToken);
+      var decodedaccessToken = await jwt_decode(accessToken);
+
+      if (decodedaccessToken.client_id == "5ia57cv71p7o9qklsta304metp" && decodedIdToken.client_id == "5ia57cv71p7o9qklsta304metp") {
+        callGetDynamoDBEndpoint();
+        setDisplayedName(decodedaccessToken.username)
+        setRole(decodedaccessToken["cognito:groups"][0]);
+      } else {
+        alert("Token is not valid! Please sign in again.")
+      }
     } catch {
-      alert("Token is not valid! Please sign in again.")
+      //alert("Token is not valid! Please sign in again.")
       // redirect to home
     }
   }, []); 
