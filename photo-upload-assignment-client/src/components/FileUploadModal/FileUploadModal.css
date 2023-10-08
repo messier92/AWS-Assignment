@@ -1,0 +1,40 @@
+/* Modal Styles */
+.modalContainer {
+    border: 5px solid black;
+}
+
+  h2 {
+    margin-bottom: 20px;
+  }
+  
+  /* Input Styles */
+  input[type="file"] {
+    margin-bottom: 20px;
+  }
+  
+  /* Radio Button Styles */
+  input[type="radio"] {
+    margin-right: 5px;
+  }
+  
+  /* Button Styles */
+  button {
+    padding: 10px 20px;
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Button text color */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease-in-out;
+    margin-right: 10px;
+  }
+  
+  button:last-child {
+    margin-right: 0;
+  }
+  
+  /* Hover effect for buttons */
+  button:hover {
+    background-color: #0056b3; /* Darker background color on hover */
+  }

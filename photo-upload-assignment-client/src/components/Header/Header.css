@@ -1,0 +1,42 @@
+/* Header Styles */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333; /* You can change the background color */
+    padding: 10px 20px;
+    color: #fff; /* Text color */
+  }
+  
+  .left-section {
+    flex: 1;
+  }
+  
+  .right-section {
+    display: flex;
+    gap: 10px;
+  }
+  
+  /* Greeting Styles */
+  .greeting {
+    font-size: 18px;
+  }
+  
+  /* Sign-in and Sign-out Button Styles */
+  .sign-in-up-button,
+  .sign-out-button {
+    padding: 10px 20px;
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Button text color */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease-in-out;
+  }
+  
+  .sign-in-up-button:hover,
+  .sign-out-button:hover {
+    background-color: #0056b3; /* Button background color on hover */
+  }
+  

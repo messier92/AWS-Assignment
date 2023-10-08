@@ -1,0 +1,25 @@
+.Main {
+    text-align: center;
+  }
+
+.container {
+  background-color: #282c34;
+  align-items: top;
+  justify-content: top;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.column:nth-child(1) {
+  flex: 1;
+  color: white;
+}
+
+.column:nth-child(2) {
+  flex: 3;
+  color: white;
+}

@@ -1,0 +1,160 @@
+# Create an S3 Bucket that hosts a React app
+# Use AWS CLI to execute the file like the below snippet
+# npm run provision to set up infrastructure via Cloudformation
+# npm run deploy to deploy website to s3 bucket
+AWSTemplateFormatVersion: 2010-09-09
+Parameters: # params passed to "--parameter-overrides" in CLI
+  BucketName:
+    Description: The S3 url to your React app.
+    Type: String
+  CognitoDomain:
+    Type: String
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
+    Description: Enter a string. Must be alpha numeric 3-63 in length.
+    Default: photoappdomain
+
+Resources:
+  # Create an S3 Bucket that serves a static website (i.e. React app)
+  MyHostingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+      OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: 'AES256'
+      WebsiteConfiguration: # this makes the S3 Bucket a static website/app
+        IndexDocument: index.html # default object served when visiting S3 domain
+        ErrorDocument: index.html # just send to app, let React handle errors and routing
+  # Add a Bucket Policy that lets public visitors access the web app
+  MyHostingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MyHostingBucket # attach to bucket being created
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement: # lets the public access/view the contents of your Bucket, i.e. web app
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*' # wildcard, allow all requests
+            Action: 's3:GetObject'
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref MyHostingBucket, /*]]
+  # Bucket to store photos for the web app
+  MyPhotosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: photobucketfortemusassignmenteugene
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+      OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: 'AES256'
+  # Bucket policy to make it public read and allow Lambda to Get/Put objects
+  MyPhotosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MyPhotosBucket 
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*' 
+            Action: 
+            - 's3:GetObject'
+            - 's3:PutObject'
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref MyPhotosBucket, /*]]
+  # Cognito User Pool for app
+  PhotoAppUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameConfiguration: 
+        CaseSensitive: false
+      AutoVerifiedAttributes:
+        - email
+      UserPoolName: Photo-App-User-Pool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+  # Cognito User Pool client
+  PhotoAppUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref PhotoAppUserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+      # Redirect to localhost for testing, requires localhost:3000/authenticated page to be running
+      CallbackURLs:
+        - http://localhost:3000/authenticated
+      SupportedIdentityProviders:
+        - COGNITO
+  # User Pool Domain
+  PhotoAppUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomain
+      UserPoolId: !Ref PhotoAppUserPool
+  # User Pool for Admin
+  AdminUserPoolGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: admins
+        Precedence: 0
+        UserPoolId: 
+          Ref: PhotoAppUserPool
+  # User Pool for Users
+  NormalUserPoolGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties: 
+        GroupName: users
+        Precedence: 1
+        UserPoolId:
+          Ref: PhotoAppUserPool
+  # For storing photos information with attributes ImageName (S) and ImageURL (S) and Public (S)
+  MyDynamoDBPhotosTable: 
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "ImageName"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "ImageName"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt MyHostingBucket.WebsiteURL
+    Description: URL for website hosted on S3
+  CognitoUserPoolID:
+    Value: !Ref PhotoAppUserPool
+    Description: The UserPool ID
+  CognitoAppClientID:
+    Value: !Ref PhotoAppUserPoolClient
+    Description: The app client
