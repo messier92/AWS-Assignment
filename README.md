@@ -32,3 +32,27 @@ The administrator can choose to change the visibility of the photos, which will 
 ![Alt text](image-3.png)
 
 ![Alt text](image-5.png)
+
+### STEPS TO DEPLOY ###
+Client
+1. Run "aws cloudformation deploy --template-file client_cloudformation.yaml --stack-name eugene-aws-temus-assignment-client --capabilities CAPABILITY_NAMED_IAM" to create the following:
+1. MyHostingBucket (to host React app static website) and MyHostingBucketPolicy (Policy to allow public access)
+2. MyPhotosBucket (to store photos) and MyPhotosBucketPolicy (Policy to allow PUT and GET requests)
+3. PhotoAppUserPool, PhotoAppUserPoolClient, PhotoAppUserPoolDomain, AdminUserPoolGroup (To setup AWS Cognito and Hosted UI) 
+3a. After creating a user, remember to log into the AWS Console and manually add the user into the 'admins' group for File Upload and Change Visibility functionality
+4. MyDynamoDBPhotosTable (To store photo name, URL and visibility/publicity. This could be in server too.)
+
+Server
+Pre-requisites:
+* Create an S3 bucket manually to store and upload Lambda code. This allows you to also import the node_modules.
+1. Run "aws cloudformation deploy --template-file server_cloudformation.yaml --stack-name eugene-aws-temus-assignment-server --capabilities CAPABILITY_NAMED_IAM"
+2a. For code without node_modules (besides aws-sdk), can either write it as inline code or create an index.mjs/index.js, then .zip it up and store it in an S3 bucket, which will be referred to in CloudFormation template.
+2b. For code with node_modules, run "npm init" and then "npm install" your required packages. Then do the same as 2a. When zipping the file, remember to zip it from inside the directory. 
+3. MyNodeLambdaFunctionForDynamoDB (code to get DynamoDB index - contains function to get all results from DynamoDB OR update an existing entry in DynamoDB if the correct parameter is provided in queryStringParameters)
+4. MyNodeLambdaFunctionForS3 (code to receive Image meta-data from React app and stores it in S3. Also stores the results in MyDynamoDBPhotosTable)
+5. LambdaExecutionRoleForS3AndDynamoDB (roles to allow upload and requests to S3 and DynamoDB)
+6. LambdaExecutionRoleForDynamoDB (Least Privilege principle - roles to only allow requests to DynamoDB)
+7. ApiGatewayIamRole and ApiGatewayIamRoleForS3 (to allow API Gateway to assume roles to call Lambda function - can be re-used)
+8. MyApiGateway, MyApiGatewayPostMethod, MyApiGatewayDeployment, MyLambdaFunctionApiGatewayInvokePOST - API Gateway resources for MyNodeLambdaFunctionForDynamoDB
+9. MyApiGatewayForS3, MyApiGatewayPostMethodS3, MyApiGatewayDeploymentForS3, MyLambdaFunctionApiGatewayInvokePOSTS3 - API Gateway resources for MyNodeLambdaFunctionForDynamoDB - API Gateway resources for MyNodeLambdaFunctionForS3
+10. Take note to Enable CORS for both API Gateway resources and remember to re-deploy to allow React app to call the endpoint successfully
