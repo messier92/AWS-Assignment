@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda Functions with Node.js Runtime and API Gateways
+Parameters: # params passed to "--parameter-overrides" in CLI
+  apiGatewayName:
+    Type: String
+    Default: MyAPIGatewayForDynamoDB
+  apiGatewayNameS3:
+    Type: String
+    Default: MyAPIGatewayForS3
+  apiGatewayStageNameDynamoDB:
+    Type: String
+    AllowedPattern: '[a-z0-9]+'
+    Default: calldynamodb
+  apiGatewayStageNameS3:
+    Type: String
+    AllowedPattern: '[a-z0-9]+'
+    Default: calls3
+Resources:
+  # Lambda function to send a POST request to DynamoDB
+  MyNodeLambdaFunctionForDynamoDB:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: MyNodeLambdaFunctionForDynamoDB
+      Runtime: nodejs18.x
+      Handler: getalldynamodbindex.handler
+      Role: !GetAtt LambdaExecutionRoleForDynamoDB.Arn
+      Code:
+        S3Bucket: my-lambda-code-bucket-eugenegoh  
+        S3Key: getalldynamodbindex.zip  
+      MemorySize: 128  
+  # Lambda fucntion to upload image to S3
+  MyNodeLambdaFunctionForS3:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: MyNodeLambdaFunctionForS3
+      Runtime: nodejs18.x
+      Handler: puttos3index.handler
+      Role: !GetAtt LambdaExecutionRoleForS3AndDynamoDB.Arn
+      Code:
+        S3Bucket: my-lambda-code-bucket-eugenegoh  
+        S3Key: puttos3index.zip  
+      MemorySize: 128  
+  # Role for Lambda to have PUT and GET actions for S3 AND DynamoDB
+  LambdaExecutionRoleForS3AndDynamoDB:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRoleForS3
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: 
+                  - "arn:aws:s3:::photobucketfortemusassignmenteugene/*"
+        - PolicyName: DynamoDBFullAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: "*"
+  # Role for Lambda to have full access to DynamoDB 
+  LambdaExecutionRoleForDynamoDB:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRoleForDynamoDB
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole  # Basic Lambda execution policy
+      Policies:
+        - PolicyName: DynamoDBFullAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: "*"
+  # API Gateway IAM Role for DynamoDB
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !GetAtt MyNodeLambdaFunctionForDynamoDB.Arn
+  # API Gateway IAM Role for S3
+  ApiGatewayIamRoleForS3:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !GetAtt MyNodeLambdaFunctionForS3.Arn
+  # API Gateway for DynamoDB
+  MyApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: API Gateway for DynamoDB
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Ref apiGatewayName
+  # API Gateway for S3
+  MyApiGatewayForS3:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: API Gateway for S3
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Ref apiGatewayNameS3
+  # API Gateway POST Method for DynamoDB
+  MyApiGatewayPostMethod:  
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt MyNodeLambdaFunctionForDynamoDB.Arn
+      ResourceId: !GetAtt MyApiGateway.RootResourceId
+      RestApiId: !Ref MyApiGateway
+  # API Gateway POST Method for S3
+  MyApiGatewayPostMethodS3:  
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Credentials: !GetAtt ApiGatewayIamRoleForS3.Arn
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt MyNodeLambdaFunctionForS3.Arn
+      ResourceId: !GetAtt MyApiGatewayForS3.RootResourceId
+      RestApiId: !Ref MyApiGatewayForS3
+  # API Gateway Deployment for DynamoDB 
+  MyApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - MyApiGatewayPostMethod
+    Properties:
+      RestApiId: !Ref MyApiGateway
+      StageName: !Ref apiGatewayStageNameDynamoDB
+  # API Gateway Deployment for S3
+  MyApiGatewayDeploymentForS3:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - MyApiGatewayPostMethodS3
+    Properties:
+      RestApiId: !Ref MyApiGatewayForS3
+      StageName: !Ref apiGatewayStageNameS3
+  # Lambda function Invoke for API Gateway for DynamoDB
+  MyLambdaFunctionApiGatewayInvokePOST:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt MyNodeLambdaFunctionForDynamoDB.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApiGateway}/${apiGatewayStageNameDynamoDB}/POST/
+  # Lambda function Invoke for API Gateway for S3
+  MyLambdaFunctionApiGatewayInvokePOSTS3:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt MyNodeLambdaFunctionForS3.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApiGatewayForS3}/${apiGatewayStageNameS3}/POST/
+Outputs:
+  MyNodeLambdaFunctionForDynamoDBArn:
+    Description: ARN of the Lambda Function for DynamoDB
+    Value:
+      Fn::GetAtt:
+        - MyNodeLambdaFunctionForDynamoDB
+        - Arn
+  MyNodeLambdaFunctionForS3Arn:
+    Description: ARN of the Lambda Function for Lambda
+    Value:
+      Fn::GetAtt:
+        - MyNodeLambdaFunctionForS3
+        - Arn
+  ApiGatewayURL:
+    Description: URL of the API Gateway endpoint
+    Value:
+      Fn::Sub: https://${MyApiGateway}.execute-api.${AWS::Region}.amazonaws.com/myresource
