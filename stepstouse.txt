@@ -1,0 +1,13 @@
+Steps to use:
+1. Access website at "webpagefortemusassignmenteugene.s3-website-ap-southeast-1.amazonaws.com/"  to see only public photos
+
+2. Create an account OR sign in with an existing Admin account:
+Username: MyTestAdminAccount
+Password: P@ssw0rd
+
+3. You will be routed to 
+http://localhost:3000/authenticated#id_token=...&access_token=...&expires_in=3600&token_type=Bearer, which will show you a "localhost refused to connect." error.
+
+4. Change the URL to "webpagefortemusassignmenteugene.s3-website-ap-southeast-1.amazonaws.com/home/id_token=...&access_token=...&expires_in=3600&token_type=Bearer" to see the page with all photos
+
+http://webpagefortemusassignmenteugene.s3-website-ap-southeast-1.amazonaws.com/home/id_token=ey...&access_token=ey...&expires_in=3600&token_type=Bearer

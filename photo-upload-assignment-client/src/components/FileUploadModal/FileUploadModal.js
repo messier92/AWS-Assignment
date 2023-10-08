@@ -10,7 +10,15 @@ function FileUploadModal({ isOpen, onClose, onFileUpload }) {
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    setFile(selectedFile);
+    const imageMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/bmp"];
+
+    // Check if the type property is in the list of image MIME types
+    if (imageMimeTypes.includes(selectedFile.type.toLowerCase())) {
+      setFile(selectedFile);
+    } else {
+      alert("Only allow .jpeg, .png, .gif and .bmp files to be uploaded!")
+      window.location.reload();     
+    }
   };
 
   const handlePrivacyChange = (e) => {
@@ -66,7 +74,6 @@ function FileUploadModal({ isOpen, onClose, onFileUpload }) {
     >
       <h2>Upload a File</h2>
       <input type="file" onChange={handleFileChange} />
-
       <div>
         <label>
           <input

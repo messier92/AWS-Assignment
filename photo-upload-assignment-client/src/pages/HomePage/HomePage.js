@@ -60,14 +60,14 @@ export default function HomePage() {
   useEffect(async () => {
     const currentURL = window.location.href;
     const urlParams = extractTokensFromURL(currentURL);
-    const idToken = urlParams['id_token'];
+    //const idToken = urlParams['id_token'];
     const accessToken = urlParams['access_token'];
 
     try {
-      var decodedIdToken = await jwt_decode(accessToken);
+      //var decodedIdToken = await jwt_decode(idToken);
       var decodedaccessToken = await jwt_decode(accessToken);
 
-      if (decodedaccessToken.client_id == "5ia57cv71p7o9qklsta304metp" && decodedIdToken.client_id == "5ia57cv71p7o9qklsta304metp") {
+      if (decodedaccessToken.client_id == "5ia57cv71p7o9qklsta304metp") {
         callGetDynamoDBEndpoint();
         setDisplayedName(decodedaccessToken.username)
         setRole(decodedaccessToken["cognito:groups"][0]);
@@ -75,8 +75,6 @@ export default function HomePage() {
         alert("Token is not valid! Please sign in again.")
       }
     } catch {
-      //alert("Token is not valid! Please sign in again.")
-      // redirect to home
     }
   }, []); 
 
