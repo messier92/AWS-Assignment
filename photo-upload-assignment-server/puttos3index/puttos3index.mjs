@@ -37,16 +37,17 @@ export const handler = async (event) => {
       const command = new PutCommand({
           TableName: DB_NAME,
           Item: {
-          ImageName: "imageName",
-          Public: "imagePublic"
+          ImageName: imageName,
+          ImageURL: `https://${BUCKET_NAME}.s3.amazonaws.com/${imageName}`,
+          Public: imagePublic
         },
       });
 
-      await docClient.send(command);
+      const DBresponse = await docClient.send(command);
 
       return {
         statusCode,
-        body: JSON.stringify({ link: `https://${BUCKET_NAME}.s3.amazonaws.com/${imageName}` }),
+        body: JSON.stringify({ link: `https://${BUCKET_NAME}.s3.amazonaws.com/${imagePublic}` }),
         headers
       }
     } catch (err) {
